@@ -1,0 +1,28 @@
+name: auto-deploy-branch
+# Браузерный Claude сохраняет правку в ветку claude/** и ждёт кнопки "Create PR".
+# Этот робот ловит такую ветку сразу при сохранении и сам вливает её в main —
+# без PR и без единого клика. Vercel дальше выкатывает сайт.
+on:
+  push:
+    branches:
+      - 'claude/**'
+permissions:
+  contents: write
+jobs:
+  merge-to-main:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Merge claude branch into main
+        env:
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          git config user.name "auto-deploy"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin "$BRANCH"
+          git merge --no-edit -X theirs "origin/$BRANCH"
+          git push origin main
